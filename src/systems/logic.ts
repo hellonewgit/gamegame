@@ -4,23 +4,57 @@ import type { Position, Item } from "@/core/types";
 import { MAX_HP } from "@/core/constants";
 
 let map: MapGrid;
+let idCounter = 0;
 
 export function initLevel() {
   const s = store.state;
   map = new MapGrid(s.width, s.height);
-  // Генератор как в оригинале: открытое поле, 10 прямоугольников-стен
   const rand = (a: number, b: number) => Math.floor(store.rng() * (b - a + 1)) + a;
-  // сначала всё пол
-  for (let y = 0; y < s.height; y++) for (let x = 0; x < s.width; x++) map.set(x, y, "FLOOR");
-  const carveArea = (x0: number, y0: number, w: number, h: number) => {
-    for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < w; dx++) map.set(x0 + dx, y0 + dy, "WALL");
-  };
-  for (let i = 0; i < 10; i++) {
-    const w = rand(3, 8);
-    const h = rand(3, 8);
-    const x0 = rand(1, s.width - w - 1);
-    const y0 = rand(1, s.height - h - 1);
-    carveArea(x0, y0, w, h);
+  type Room = { x0: number; y0: number; x1: number; y1: number; cx: number; cy: number };
+  const rooms: Room[] = [];
+
+  const targetRooms = rand(5, 10);
+  let attempts = 0;
+  while (rooms.length < targetRooms && attempts < targetRooms * 20) {
+    attempts++;
+    const rw = rand(3, 8);
+    const rh = rand(3, 8);
+    const x0 = rand(1, Math.max(1, s.width - rw - 2));
+    const y0 = rand(1, Math.max(1, s.height - rh - 2));
+    const x1 = x0 + rw - 1;
+    const y1 = y0 + rh - 1;
+    const overlaps = rooms.some(r => !(x1 + 1 < r.x0 - 1 || x0 - 1 > r.x1 + 1 || y1 + 1 < r.y0 - 1 || y0 - 1 > r.y1 + 1));
+    if (overlaps) continue;
+    map.carveRoom(x0, y0, x1, y1);
+    const cx = Math.floor((x0 + x1) / 2);
+    const cy = Math.floor((y0 + y1) / 2);
+    rooms.push({ x0, y0, x1, y1, cx, cy });
+  }
+
+  if (rooms.length < 3) {
+    const w = Math.max(6, Math.floor(s.width / 3));
+    const h = Math.max(6, Math.floor(s.height / 3));
+    const x0 = Math.floor((s.width - w) / 2);
+    const y0 = Math.floor((s.height - h) / 2);
+    const x1 = x0 + w - 1;
+    const y1 = y0 + h - 1;
+    map.carveRoom(x0, y0, x1, y1);
+    rooms.push({ x0, y0, x1, y1, cx: Math.floor((x0 + x1) / 2), cy: Math.floor((y0 + y1) / 2) });
+  }
+
+  rooms.sort((a, b) => a.cx - b.cx + (a.cy - b.cy));
+  for (let i = 1; i < rooms.length; i++) {
+    const a = rooms[i - 1]!; const b = rooms[i]!;
+    map.carveCorridor(a.cx, a.cy, b.cx, b.cy);
+  }
+
+  const extra = Math.min(rooms.length, rand(2, 4));
+  for (let i = 0; i < extra; i++) {
+    const ai = rand(0, rooms.length - 1);
+    const bi = rand(0, rooms.length - 1);
+    if (ai === bi) continue;
+    const a = rooms[ai]!; const b = rooms[bi]!;
+    map.carveCorridor(a.cx, a.cy, b.cx, b.cy);
   }
 
   store.update(st => {
@@ -28,7 +62,6 @@ export function initLevel() {
     st.player.pos = findEmpty();
     st.enemies = [];
     st.items = [];
-    // точное соответствие оригиналу: 10 врагов, 10 HP, 2 SW
     spawnEnemiesExact();
     spawnItemsExact();
   });
@@ -67,7 +100,6 @@ function occupiedByEnemy(p: Position) {
 function moveActor(pos: Position, dx: number, dy: number) {
   const next = { x: pos.x + dx, y: pos.y + dy };
   if (!isWalkable(next)) return;
-  // нельзя шагать на врага — атака отдельной кнопкой (SPACE)
   if (occupiedByEnemy(next)) return;
 
   store.update(s => { s.player.pos = next; });
@@ -79,8 +111,8 @@ function pickupPhase() {
     const i = s.items.findIndex(it => it.pos.x === s.player.pos.x && it.pos.y === s.player.pos.y);
     if (i >= 0) {
       const item = s.items[i]!;
-      if (item.kind === "potion") s.player.hp = MAX_HP; // полное лечение
-      if (item.kind === "gold") s.player.attack += 10; // меч усиливает атаку на 10
+      if (item.kind === "potion") s.player.hp = MAX_HP;
+      if (item.kind === "gold") s.player.attack += 10;
       s.items.splice(i, 1);
     }
   });
@@ -92,21 +124,19 @@ function aiPhase() {
       const dxTo = Math.sign(s.player.pos.x - e.pos.x);
       const dyTo = Math.sign(s.player.pos.y - e.pos.y);
 
-      // если рядом по чебышевскому расстоянию — бьём
       const cheb = Math.max(Math.abs(s.player.pos.x - e.pos.x), Math.abs(s.player.pos.y - e.pos.y));
       if (cheb <= 1) {
         s.player.hp -= e.attack;
         s.effects.push({ pos: { ...s.player.pos }, t: 120, color: "#ffd166" });
         if (s.player.hp <= 0) {
           alert("Game Over!");
-          s.player.hp = MAX_HP; // как в оригинале — лечим и продолжаем
+          s.player.hp = MAX_HP;
         }
         continue;
       }
 
-      // случайно выбираем ось, как в оригинале
       const step = { x: e.pos.x, y: e.pos.y };
-      if (Math.random() < 0.5) step.x += dxTo; else step.y += dyTo;
+      if (store.rng() < 0.5) step.x += dxTo; else step.y += dyTo;
 
       if (!isWalkable(step)) continue;
       if (s.enemies.some(other => other !== e && other.pos.x === step.x && other.pos.y === step.y)) continue;
@@ -116,12 +146,9 @@ function aiPhase() {
   });
 }
 
-function combatPhase() {
-  // точка расширения под бафы/статусы
-}
+function combatPhase() {}
 
 function endPhase() {
-  // победный цикл как в оригинале: когда врагов нет — новая волна и лут
   store.update(s => {
     if (s.enemies.length === 0) {
       alert("You Win!");
@@ -162,17 +189,16 @@ function findEmpty(): Position {
 
 function spawnEnemy() {
   const pos = findEmpty();
-  return { id: `e${Math.random()}`, pos, hp: 40, attack: 3, kind: "enemy" as const };
+  return { id: `e${++idCounter}`, pos, hp: 40, attack: 3, kind: "enemy" as const };
 }
 
 function spawnItem(kind: Item["kind"], value: number): Item {
   const pos = findEmpty();
-  return { id: `i${Math.random()}`, pos, kind, value };
+  return { id: `i${++idCounter}`, pos, kind, value };
 }
 
 function spawnItemsExact() {
   store.update(s => {
-    // 10 HP и 2 SW как в оригинале
     for (let i = 0; i < 10; i++) s.items.push(spawnItem("potion", 1));
     for (let i = 0; i < 2; i++) s.items.push(spawnItem("gold", 1));
   });

@@ -4,6 +4,7 @@ import { assets } from "@/render/assets";
 
 let ctx: CanvasRenderingContext2D;
 let currentScale = 1; // CSS pixels per logical pixel
+let titleEl: HTMLElement | null = null;
 
 function computeScale(targetW: number, targetH: number) {
   const padding = 32; // leave room around the board
@@ -33,9 +34,12 @@ export function resizeCanvas(canvas: HTMLCanvasElement) {
 export function initCanvas(canvas: HTMLCanvasElement) {
   ctx = canvas.getContext("2d")!;
   resizeCanvas(canvas);
+  // cache HUD elements used every frame
+  if (!titleEl) titleEl = document.getElementById("title");
 }
 
 export function render() {
+  if (!ctx) return; // not initialized yet
   const s = store.state;
   const { width, height } = s;
   ctx.fillStyle = "#0d0f14";
@@ -74,7 +78,7 @@ export function render() {
     if (assets.enemy) ctx.drawImage(assets.enemy, px, py, CELL, CELL);
     else { ctx.fillStyle = "#e35d5b"; ctx.fillRect(px + 4, py + 4, CELL - 8, CELL - 8); }
 
-    // HP bar (enemy): max 40 как в оригинале
+    // HP bar (enemy): max 40
     const maxHp = 40;
     const ratio = Math.max(0, Math.min(1, e.hp / maxHp));
     const barW = CELL - 4;
@@ -111,7 +115,6 @@ export function render() {
     ctx.globalAlpha = 1;
   }
 
-  // HUD title как в оригинале
-  const title = document.getElementById("title");
-  if (title) title.textContent = `Игровое поле. Здоровья: ${s.player.hp} Атака: ${s.player.attack}`;
+  // HUD title
+  if (titleEl) titleEl.textContent = `Игровое поле. Здоровья: ${s.player.hp} Атака: ${s.player.attack}`;
 }
