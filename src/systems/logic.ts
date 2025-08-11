@@ -1,7 +1,7 @@
 import { store } from "@/core/store";
 import { MapGrid } from "@/map/MapGrid";
 import type { Position, Item } from "@/core/types";
-import { MAX_ENEMIES, MAX_ITEMS, MAX_HP } from "@/core/constants";
+import { MAX_HP } from "@/core/constants";
 
 let map: MapGrid;
 
@@ -44,10 +44,12 @@ export function stepTurn() {
   if (intent) {
     moveActor(s.player.pos, intent.dx, intent.dy);
     aiPhase();
+    combatPhase();
     endPhase();
   } else if (attack) {
     playerAttack();
     aiPhase();
+    combatPhase();
     endPhase();
   }
 }
@@ -103,7 +105,7 @@ function aiPhase() {
       }
 
       // случайно выбираем ось, как в оригинале
-      let step = { x: e.pos.x, y: e.pos.y };
+      const step = { x: e.pos.x, y: e.pos.y };
       if (Math.random() < 0.5) step.x += dxTo; else step.y += dyTo;
 
       if (!isWalkable(step)) continue;
