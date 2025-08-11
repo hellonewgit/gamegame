@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Roguelike</title>
+    <style>
+      html,body { margin:0; height:100%; background:#0d0f14; color:#e6e6e6; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+      #hud { position:fixed; left:16px; top:16px; z-index:2 }
+      #overlay { position:fixed; inset:0; display:none; place-items:center; background:rgba(0,0,0,.5); z-index:3 }
+      #overlay.show { display:grid }
+      button { padding:.6rem 1rem; background:#1f2430; color:#e6e6e6; border:1px solid #2c3242; border-radius:8px; cursor:pointer }
+      body { display:grid; place-items:center; }
+      canvas { display:block; image-rendering: pixelated; }
+    </style>
+  </head>
+  <body>
+    <h1 id="title"></h1>
+    <div id="overlay"><div><h1 id="overlay-title">Игра окончена</h1><div style="height:12px"></div><button id="restart">Заново</button></div></div>
+    <canvas id="game" width="832" height="832"></canvas>
+    <script type="module" src="/src/main.ts"></script>
+    <script>
+      // keep centered on resize (renderer reads innerWidth/innerHeight)
+      window.addEventListener('resize', () => {
+        import('/src/render/canvas.ts').then(m => {
+          const c = document.getElementById('game');
+          if (c) m.resizeCanvas(c);
+        });
+      });
+    </script>
+  </body>
+</html>
