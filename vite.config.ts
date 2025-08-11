@@ -5,5 +5,5 @@ export default defineConfig({
   plugins: [tsconfigPaths()],
   server: { port: 5173 },
   base: "./",
-  build: { target: "es2022", outDir: "docs", emptyOutDir: true }
+  build: { target: "es2022", outDir: "dist", emptyOutDir: true }
 });
