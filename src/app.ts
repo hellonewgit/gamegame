@@ -1,7 +1,7 @@
 import { enableInput, disableInput } from "@/systems/input";
 import { initLevel, stepTurn } from "@/systems/logic";
 import { tickEffects } from "@/systems/effects";
-import { initCanvas, render } from "@/render/canvas";
+import { initCanvas, resizeCanvas, render } from "@/render/canvas";
 import { store } from "@/core/store";
 import { TURN_MS } from "@/core/constants";
 import { loadAssets } from "@/render/assets";
@@ -44,6 +44,11 @@ export const app = {
     initLevel();
     enableInput();
     raf = requestAnimationFrame(frame);
+    // keep centered on resize without dynamic import
+    window.addEventListener("resize", () => {
+      const c = document.getElementById("game") as HTMLCanvasElement | null;
+      if (c) resizeCanvas(c);
+    });
     window.addEventListener("beforeunload", () => {
       disableInput();
       cancelAnimationFrame(raf);
