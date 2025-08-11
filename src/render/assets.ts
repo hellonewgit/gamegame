@@ -9,13 +9,6 @@ export type SpriteMap = {
 
 export const assets: SpriteMap = {};
 
-// Match filenames from https://github.com/b602op/game-rogalik/tree/main/images
-// tile-W.png   -> wall
-// tile-.png    -> floor
-// tile-P.png   -> player
-// tile-E.png   -> enemy
-// tile-HP.png  -> potion
-// tile-SW.png  -> gold (used for sword/loot placeholder)
 const BASE: string = import.meta.env.BASE_URL ?? "./";
 const prefix: string = BASE.endsWith("/") ? BASE : `${BASE}/`;
 const sources: Record<keyof SpriteMap, string> = {
