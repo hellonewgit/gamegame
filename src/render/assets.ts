@@ -16,13 +16,15 @@ export const assets: SpriteMap = {};
 // tile-E.png   -> enemy
 // tile-HP.png  -> potion
 // tile-SW.png  -> gold (used for sword/loot placeholder)
+const BASE = (import.meta as any).env?.BASE_URL ?? "./";
+const prefix = BASE.endsWith("/") ? BASE : BASE + "/";
 const sources: Record<keyof SpriteMap, string> = {
-  wall: "/images/tile-W.png",
-  floor: "/images/tile-.png",
-  player: "/images/tile-P.png",
-  enemy: "/images/tile-E.png",
-  potion: "/images/tile-HP.png",
-  gold: "/images/tile-SW.png"
+  wall: `${prefix}images/tile-W.png`,
+  floor: `${prefix}images/tile-.png`,
+  player: `${prefix}images/tile-P.png`,
+  enemy: `${prefix}images/tile-E.png`,
+  potion: `${prefix}images/tile-HP.png`,
+  gold: `${prefix}images/tile-SW.png`
 };
 
 function loadImage(src: string) {
