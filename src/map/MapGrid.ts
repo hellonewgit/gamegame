@@ -14,9 +14,9 @@ export class MapGrid {
     // гарантируем возврат Tile при strict типах
     return this.tiles[this.idx(x, y)]!;
   }
-  set(x: number, y: number, t: Tile) {
+  set(x: number, y: number, tile: Tile) {
     if (!this.isInside(x, y)) return;
-    this.tiles[this.idx(x, y)] = t;
+    this.tiles[this.idx(x, y)] = tile;
   }
 
   carveRoom(x0: number, y0: number, x1: number, y1: number) {

@@ -6,23 +6,23 @@ import { store } from "@/core/store";
 import { TURN_MS } from "@/core/constants";
 import { loadAssets } from "@/render/assets";
 
-let acc = 0;
-let last = 0;
-let raf = 0;
+let accumulatorMs = 0;
+let lastTimestamp = 0;
+let rafId = 0;
 
-function frame(ts: number) {
-  if (!last) last = ts;
-  const dt = ts - last;
-  last = ts;
+function frame(timestamp: number) {
+  if (!lastTimestamp) lastTimestamp = timestamp;
+  const deltaMs = timestamp - lastTimestamp;
+  lastTimestamp = timestamp;
 
-  acc += dt;
-  while (acc >= TURN_MS) {
+  accumulatorMs += deltaMs;
+  while (accumulatorMs >= TURN_MS) {
     stepTurn();
     tickEffects(TURN_MS);
-    acc -= TURN_MS;
+    accumulatorMs -= TURN_MS;
   }
   render();
-  raf = requestAnimationFrame(frame);
+  rafId = requestAnimationFrame(frame);
 }
 
 function bindOverlay() {
@@ -53,15 +53,15 @@ export const app = {
     store.reset();
     initLevel();
     enableInput();
-    raf = requestAnimationFrame(frame);
+    rafId = requestAnimationFrame(frame);
     // keep centered on resize without dynamic import
     window.addEventListener("resize", () => {
-      const c = document.getElementById("game") as HTMLCanvasElement | null;
-      if (c) resizeCanvas(c);
+      const canvasEl = document.getElementById("game") as HTMLCanvasElement | null;
+      if (canvasEl) resizeCanvas(canvasEl);
     });
     window.addEventListener("beforeunload", () => {
       disableInput();
-      cancelAnimationFrame(raf);
+      cancelAnimationFrame(rafId);
     });
   }
 };

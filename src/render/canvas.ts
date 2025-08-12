@@ -17,9 +17,9 @@ function computeScale(targetW: number, targetH: number) {
 
 export function resizeCanvas(canvas: HTMLCanvasElement) {
   const dpr = Math.max(1, Math.floor(window.devicePixelRatio));
-  const s = store.state;
-  const targetW = s.width * CELL;
-  const targetH = s.height * CELL;
+  const state = store.state;
+  const targetW = state.width * CELL;
+  const targetH = state.height * CELL;
   currentScale = computeScale(targetW, targetH);
   const cssW = targetW * currentScale;
   const cssH = targetH * currentScale;
@@ -40,17 +40,17 @@ export function initCanvas(canvas: HTMLCanvasElement) {
 
 export function render() {
   if (!ctx) return; // not initialized yet
-  const s = store.state;
-  const { width, height } = s;
+  const state = store.state;
+  const { width, height } = state;
   ctx.fillStyle = "#0d0f14";
   ctx.fillRect(0, 0, width * CELL, height * CELL);
 
   // карта
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const t = s.map[y * width + x];
+      const tile = state.map[y * width + x];
       const px = x * CELL, py = y * CELL;
-      if (t === "WALL") {
+      if (tile === "WALL") {
         if (assets.wall) ctx.drawImage(assets.wall, px, py, CELL, CELL);
         else { ctx.fillStyle = "#151a22"; ctx.fillRect(px, py, CELL, CELL); }
       } else {
@@ -61,7 +61,7 @@ export function render() {
   }
 
   // предметы
-  for (const item of s.items) {
+  for (const item of state.items) {
     const px = item.pos.x * CELL, py = item.pos.y * CELL;
     if (item.kind === "potion") {
       if (assets.potion) ctx.drawImage(assets.potion, px, py, CELL, CELL);
@@ -73,14 +73,14 @@ export function render() {
   }
 
   // враги
-  for (const e of s.enemies) {
-    const px = e.pos.x * CELL, py = e.pos.y * CELL;
+  for (const enemy of state.enemies) {
+    const px = enemy.pos.x * CELL, py = enemy.pos.y * CELL;
     if (assets.enemy) ctx.drawImage(assets.enemy, px, py, CELL, CELL);
     else { ctx.fillStyle = "#e35d5b"; ctx.fillRect(px + 4, py + 4, CELL - 8, CELL - 8); }
 
     // HP bar (enemy): max 40
     const maxHp = 40;
-    const ratio = Math.max(0, Math.min(1, e.hp / maxHp));
+    const ratio = Math.max(0, Math.min(1, enemy.hp / maxHp));
     const barW = CELL - 4;
     const bx = px + 2, by = py - 4; // above sprite
     // background
@@ -93,7 +93,7 @@ export function render() {
 
   // игрок
   {
-    const px = s.player.pos.x * CELL, py = s.player.pos.y * CELL;
+    const px = state.player.pos.x * CELL, py = state.player.pos.y * CELL;
     if (assets.player) ctx.drawImage(assets.player, px, py, CELL, CELL);
     else { ctx.fillStyle = "#67a6ff"; ctx.fillRect(px + 4, py + 4, CELL - 8, CELL - 8); }
 
@@ -102,19 +102,19 @@ export function render() {
     const bx = px + 2, by = py - 5;
     ctx.fillStyle = "#3a3a3a";
     ctx.fillRect(bx, by, barW, 4);
-    const ratio = Math.max(0, Math.min(1, s.player.hp / MAX_HP));
+    const ratio = Math.max(0, Math.min(1, state.player.hp / MAX_HP));
     ctx.fillStyle = "#4caf50";
     ctx.fillRect(bx, by, Math.floor(barW * ratio), 4);
   }
 
   // эффекты
-  for (const fx of s.effects) {
-    ctx.globalAlpha = Math.max(0, Math.min(1, fx.t / 120));
-    ctx.fillStyle = fx.color;
-    ctx.fillRect(fx.pos.x * CELL, fx.pos.y * CELL, CELL, CELL);
+  for (const effect of state.effects) {
+    ctx.globalAlpha = Math.max(0, Math.min(1, effect.ttlMs / 120));
+    ctx.fillStyle = effect.color;
+    ctx.fillRect(effect.pos.x * CELL, effect.pos.y * CELL, CELL, CELL);
     ctx.globalAlpha = 1;
   }
 
   // HUD title
-  if (titleEl) titleEl.textContent = `Игровое поле. Здоровья: ${s.player.hp} Атака: ${s.player.attack}`;
+  if (titleEl) titleEl.textContent = `Игровое поле. Здоровья: ${state.player.hp} Атака: ${state.player.attack}`;
 }

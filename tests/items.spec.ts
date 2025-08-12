@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
+
 import { store } from "@/core/store";
 import { initLevel, stepTurn } from "@/systems/logic";
 
@@ -8,7 +9,7 @@ describe("items", () => {
     initLevel();
   });
 
-  it("level spawns only potion or sword (no gold)", () => {
+  it("level spawns only potion or sword (no other kinds)", () => {
     const kinds = new Set(store.state.items.map(i => i.kind));
     for (const k of kinds) {
       expect(["potion", "sword"]).toContain(k);

@@ -17,7 +17,7 @@ function makeEmptyState(): GameState {
   };
 }
 
-type Listener = (s: GameState) => void;
+type Listener = (state: GameState) => void;
 
 class Store {
   public state: GameState = makeEmptyState();
@@ -32,7 +32,7 @@ class Store {
     this.emit();
   }
 
-  update(mutator: (s: GameState) => void) {
+  update(mutator: (state: GameState) => void) {
     mutator(this.state);
     this.emit();
   }
@@ -40,7 +40,7 @@ class Store {
   on(fn: Listener) { this.#listeners.add(fn); return () => this.#listeners.delete(fn); }
   emit() { for (const fn of this.#listeners) fn(this.state); }
 
-  isInside(p: Position) { return p.x >= 0 && p.y >= 0 && p.x < this.state.width && p.y < this.state.height; }
+  isInside(position: Position) { return position.x >= 0 && position.y >= 0 && position.x < this.state.width && position.y < this.state.height; }
   idx(x: number, y: number) { return y * this.state.width + x; }
 }
 export const store = new Store();

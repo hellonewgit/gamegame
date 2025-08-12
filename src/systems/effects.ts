@@ -1,9 +1,10 @@
 import { store } from "@/core/store";
 
-export function tickEffects(dt: number) {
-  store.update(s => {
-    s.effects = s.effects
-      .map(e => ({ ...e, t: e.t - dt }))
-      .filter(e => e.t > 0);
+export function tickEffects(deltaMs: number) {
+  store.update(state => {
+    state.effects = state.effects
+      .map(effect => ({ ...effect, ttlMs: effect.ttlMs - deltaMs }))
+      .filter(effect => effect.ttlMs > 0)
+      .slice(-64);
   });
 }

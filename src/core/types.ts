@@ -25,7 +25,7 @@ export interface GameState {
   player: Actor;
   enemies: Actor[];
   items: Item[];
-  effects: Array<{ pos: Position; t: number; color: string }>; // кратко живут
+  effects: Array<{ pos: Position; ttlMs: number; color: string }>; // кратко живут
   inputLocked: boolean;
   rngSeed: number;
   uiOverlay?: string; // текст оверлея вместо alert
