@@ -27,10 +27,20 @@ function frame(ts: number) {
 
 function bindOverlay() {
   const overlay = document.getElementById("overlay")!;
+  const overlayTitle = document.getElementById("overlay-title")!;
   document.getElementById("restart")!.addEventListener("click", () => {
     overlay.classList.remove("show");
     store.reset();
     initLevel();
+  });
+  // subscribe to overlay changes
+  store.on(state => {
+    if (state.uiOverlay) {
+      overlayTitle.textContent = state.uiOverlay;
+      overlay.classList.add("show");
+    } else {
+      overlay.classList.remove("show");
+    }
   });
 }
 

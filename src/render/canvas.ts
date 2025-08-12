@@ -61,14 +61,14 @@ export function render() {
   }
 
   // предметы
-  for (const it of s.items) {
-    const px = it.pos.x * CELL, py = it.pos.y * CELL;
-    if (it.kind === "potion") {
+  for (const item of s.items) {
+    const px = item.pos.x * CELL, py = item.pos.y * CELL;
+    if (item.kind === "potion") {
       if (assets.potion) ctx.drawImage(assets.potion, px, py, CELL, CELL);
       else { ctx.fillStyle = "#6be675"; ctx.fillRect(px + 8, py + 8, CELL - 16, CELL - 16); }
     } else {
-      if (assets.gold) ctx.drawImage(assets.gold, px, py, CELL, CELL);
-      else { ctx.fillStyle = "#e6d96b"; ctx.fillRect(px + 8, py + 8, CELL - 16, CELL - 16); }
+      if (assets.sword) ctx.drawImage(assets.sword, px, py, CELL, CELL);
+      else { ctx.fillStyle = "#9bd1ff"; ctx.fillRect(px + 8, py + 8, CELL - 16, CELL - 16); }
     }
   }
 

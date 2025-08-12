@@ -4,7 +4,7 @@ export type SpriteMap = {
   player?: HTMLImageElement;
   enemy?: HTMLImageElement;
   potion?: HTMLImageElement;
-  gold?: HTMLImageElement;
+  sword?: HTMLImageElement;
 };
 
 export const assets: SpriteMap = {};
@@ -17,7 +17,7 @@ const sources: Record<keyof SpriteMap, string> = {
   player: `${prefix}images/tile-P.png`,
   enemy: `${prefix}images/tile-E.png`,
   potion: `${prefix}images/tile-HP.png`,
-  gold: `${prefix}images/tile-SW.png`
+  sword: `${prefix}images/tile-SW.png`
 };
 
 function loadImage(src: string) {

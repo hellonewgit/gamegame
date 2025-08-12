@@ -57,11 +57,13 @@ export function initLevel() {
     map.carveCorridor(a.cx, a.cy, b.cx, b.cy);
   }
 
-  store.update(st => {
-    st.map = map.tiles;
-    st.player.pos = findEmpty();
-    st.enemies = [];
-    st.items = [];
+  store.update(state => {
+    state.map = map.tiles;
+    state.player.pos = findEmpty();
+    state.enemies = [];
+    state.items = [];
+    state.uiOverlay = undefined;
+    state.inputLocked = false;
     spawnEnemiesExact();
     spawnItemsExact();
   });
@@ -107,41 +109,78 @@ function moveActor(pos: Position, dx: number, dy: number) {
 }
 
 function pickupPhase() {
-  store.update(s => {
-    const i = s.items.findIndex(it => it.pos.x === s.player.pos.x && it.pos.y === s.player.pos.y);
-    if (i >= 0) {
-      const item = s.items[i]!;
-      if (item.kind === "potion") s.player.hp = MAX_HP;
-      if (item.kind === "gold") s.player.attack += 10;
-      s.items.splice(i, 1);
+  store.update(state => {
+    const idx = state.items.findIndex(item => item.pos.x === state.player.pos.x && item.pos.y === state.player.pos.y);
+    if (idx >= 0) {
+      const item = state.items[idx]!;
+      if (item.kind === "potion") state.player.hp = Math.min(MAX_HP, state.player.hp + item.value);
+      if (item.kind === "sword") state.player.attack += item.value;
+      state.items.splice(idx, 1);
     }
   });
 }
 
 function aiPhase() {
-  store.update(s => {
-    for (const e of s.enemies) {
-      const dxTo = Math.sign(s.player.pos.x - e.pos.x);
-      const dyTo = Math.sign(s.player.pos.y - e.pos.y);
+  store.update(state => {
+    for (const enemy of state.enemies) {
+      const towardX = Math.sign(state.player.pos.x - enemy.pos.x);
+      const towardY = Math.sign(state.player.pos.y - enemy.pos.y);
 
-      const cheb = Math.max(Math.abs(s.player.pos.x - e.pos.x), Math.abs(s.player.pos.y - e.pos.y));
-      if (cheb <= 1) {
-        s.player.hp -= e.attack;
-        s.effects.push({ pos: { ...s.player.pos }, t: 120, color: "#ffd166" });
-        if (s.player.hp <= 0) {
-          alert("Game Over!");
-          s.player.hp = MAX_HP;
+      const chebyshev = Math.max(Math.abs(state.player.pos.x - enemy.pos.x), Math.abs(state.player.pos.y - enemy.pos.y));
+      // Если соседствует с игроком — атакует и НЕ двигается
+      if (chebyshev <= 1) {
+        state.player.hp -= enemy.attack;
+        state.effects.push({ pos: { ...state.player.pos }, t: 120, color: "#ffd166" });
+        if (state.player.hp <= 0) {
+          state.uiOverlay = "Игра окончена";
+          state.inputLocked = true;
+          state.player.hp = MAX_HP;
         }
         continue;
       }
 
-      const step = { x: e.pos.x, y: e.pos.y };
-      if (store.rng() < 0.5) step.x += dxTo; else step.y += dyTo;
+      const randomStep = store.rng() < 0.3; // 30% — случайный сдвиг
+      const candidateSteps: Position[] = [];
+      if (randomStep) {
+        candidateSteps.push(
+          { x: enemy.pos.x + 1, y: enemy.pos.y },
+          { x: enemy.pos.x - 1, y: enemy.pos.y },
+          { x: enemy.pos.x, y: enemy.pos.y + 1 },
+          { x: enemy.pos.x, y: enemy.pos.y - 1 }
+        );
+      } else {
+        if (Math.abs(state.player.pos.x - enemy.pos.x) >= Math.abs(state.player.pos.y - enemy.pos.y)) {
+          candidateSteps.push({ x: enemy.pos.x + towardX, y: enemy.pos.y });
+          candidateSteps.push({ x: enemy.pos.x, y: enemy.pos.y + towardY });
+        } else {
+          candidateSteps.push({ x: enemy.pos.x, y: enemy.pos.y + towardY });
+          candidateSteps.push({ x: enemy.pos.x + towardX, y: enemy.pos.y });
+        }
+      }
 
-      if (!isWalkable(step)) continue;
-      if (s.enemies.some(other => other !== e && other.pos.x === step.x && other.pos.y === step.y)) continue;
-      if (step.x === s.player.pos.x && step.y === s.player.pos.y) continue;
-      e.pos = step;
+      let acted = false;
+      for (const next of candidateSteps) {
+        if (!isWalkable(next)) continue;
+        // попытка зайти на игрока трактуется как атака, без движения
+        if (next.x === state.player.pos.x && next.y === state.player.pos.y) {
+          state.player.hp -= enemy.attack;
+          state.effects.push({ pos: { ...state.player.pos }, t: 120, color: "#ffd166" });
+          if (state.player.hp <= 0) {
+            state.uiOverlay = "Игра окончена";
+            state.inputLocked = true;
+            state.player.hp = MAX_HP;
+          }
+          acted = true;
+          break;
+        }
+        if (state.enemies.some(other => other !== enemy && other.pos.x === next.x && other.pos.y === next.y)) continue;
+        enemy.pos = next;
+        acted = true;
+        break;
+      }
+      if (!acted) {
+        // пропуск хода
+      }
     }
   });
 }
@@ -149,9 +188,10 @@ function aiPhase() {
 function combatPhase() {}
 
 function endPhase() {
-  store.update(s => {
-    if (s.enemies.length === 0) {
-      alert("You Win!");
+  store.update(state => {
+    if (state.enemies.length === 0) {
+      state.uiOverlay = "Победа!";
+      state.inputLocked = true;
       spawnItemsExact();
       spawnEnemiesExact();
     }
@@ -198,9 +238,9 @@ function spawnItem(kind: Item["kind"], value: number): Item {
 }
 
 function spawnItemsExact() {
-  store.update(s => {
-    for (let i = 0; i < 10; i++) s.items.push(spawnItem("potion", 1));
-    for (let i = 0; i < 2; i++) s.items.push(spawnItem("gold", 1));
+  store.update(state => {
+    for (let i = 0; i < 10; i++) state.items.push(spawnItem("potion", 2));
+    for (let i = 0; i < 2; i++) state.items.push(spawnItem("sword", 1));
   });
 }
 

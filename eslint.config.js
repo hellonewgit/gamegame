@@ -31,7 +31,17 @@ export default tseslint.config(
     rules: {
       "no-console": ["warn", { allow: ["warn", "error"] }],
       "unused-imports/no-unused-imports": "error",
-      "import/order": ["warn", { "newlines-between": "always" }],
+      "import/order": ["error", { "newlines-between": "always" }],
+      // Naming and identifier length
+      "id-length": [
+        "warn",
+        { min: 2, exceptions: ["x", "y", "i", "j", "k", "dx", "dy"] }
+      ],
+      "@typescript-eslint/naming-convention": [
+        "warn",
+        { "selector": "variable", "format": ["camelCase", "UPPER_CASE"], "leadingUnderscore": "allow" },
+        { "selector": "typeLike", "format": ["PascalCase"] }
+      ],
       // Relax strict rules for this project to keep CI green
       "@typescript-eslint/no-non-null-assertion": "off",
       "@typescript-eslint/restrict-template-expressions": "off",

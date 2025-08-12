@@ -13,7 +13,7 @@ export interface Actor {
 export interface Item {
   id: string;
   pos: Position;
-  kind: "potion" | "gold";
+  kind: "potion" | "sword";
   value: number;
 }
 
@@ -28,4 +28,5 @@ export interface GameState {
   effects: Array<{ pos: Position; t: number; color: string }>; // кратко живут
   inputLocked: boolean;
   rngSeed: number;
+  uiOverlay?: string; // текст оверлея вместо alert
 }
